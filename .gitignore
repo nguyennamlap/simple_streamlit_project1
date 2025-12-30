@@ -1,4 +1,4 @@
-./src/nen.py
+nen.py
 
 cat <<EOF >> .gitignore
 __pycache__/
