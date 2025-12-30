@@ -1,0 +1,36 @@
+services:
+  data-processing:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    container_name: cleaning_container
+    volumes:
+      - ./data:/app/data
+      - ./artifacts:/app/artifacts
+      - ./images:/app/images
+      - ./src:/app/src
+    command: ["tail", "-f", "/dev/null"]
+
+
+  data-training:
+    build:
+      context: .
+      dockerfile: ./training/Dockerfile
+    container_name: training_container
+    volumes: 
+      - ./data:/app/data
+      - ./training:/app/training
+    command: ["tail", "-f", "/dev/null"]
+
+
+  credit-risk-dashboard:
+    build: 
+      context: .    # 🔥 FIX 1: ĐÚNG BUILD CONTEXT
+      dockerfile: ./streamlit/Dockerfile
+    container_name: credit-risk-dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./streamlit:/app/streamlit   # 🔥 FIX 2: THÊM /
+    restart: unless-stopped

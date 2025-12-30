@@ -1,0 +1,13 @@
+./src/nen.py
+
+cat <<EOF >> .gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+data/
+*.csv
+*.parquet
+EOF
+*.backup*
