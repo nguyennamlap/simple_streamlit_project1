@@ -86,7 +86,7 @@ st.markdown("""
 def load_model_artifacts():
     """Load all model artifacts"""
     try:
-        model_dir = Path(os.path.join(DATA_DIR, "models"))
+        model_dir = Path(os.path.join(DATA_DIR, "/models"))
         
         # Get latest files
         model_files = sorted(model_dir.glob('logistic_regression_*.pkl'))
