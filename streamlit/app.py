@@ -11,7 +11,7 @@ import joblib
 import json
 from pathlib import Path
 from datetime import datetime
-
+import os
 # Page configuration
 st.set_page_config(
     page_title="Credit Risk Model Dashboard",
@@ -19,7 +19,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))   # streamlit/
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))  # repo root
+DATA_DIR = os.path.join(ROOT_DIR, "data")
 # Custom CSS
 st.markdown("""
 <style>
@@ -84,7 +86,7 @@ st.markdown("""
 def load_model_artifacts():
     """Load all model artifacts"""
     try:
-        model_dir = Path('/app/data/models')
+        model_dir = Path(os.path.join(DATA_DIR, "models"))
         
         # Get latest files
         model_files = sorted(model_dir.glob('logistic_regression_*.pkl'))
@@ -109,7 +111,7 @@ def load_model_artifacts():
 def load_training_results():
     """Load training results"""
     try:
-        report_dir = Path('/app/data/reports')
+        report_dir = Path(os.path.join(DATA_DIR, '/reports'))
         result_files = sorted(report_dir.glob('training_results_*.json'))
         
         if not result_files:
@@ -125,7 +127,7 @@ def load_training_results():
 def load_raw_data():
     """Load raw data (before cleaning)"""
     try:
-        data_path = Path('/app/data/application_train.csv')
+        data_path = Path(os.path.join(DATA_DIR, "application_train.csv"))
         if data_path.exists():
             return pd.read_csv(data_path)
         return None
@@ -137,7 +139,7 @@ def load_raw_data():
 def load_processed_data():
     """Load processed data (after cleaning, before training)"""
     try:
-        data_path = Path('/app/data/df_processed.csv')
+        data_path = Path(os.path.join(DATA_DIR, "df_processed.csv"))
         if data_path.exists():
             return pd.read_csv(data_path)
         return None
@@ -149,7 +151,7 @@ def load_processed_data():
 def load_training_data():
     """Load final training data (after feature engineering)"""
     try:
-        data_path = Path('/app/data/df_final.csv')
+        data_path = Path(os.path.join(DATA_DIR, 'df_final.csv'))
         if data_path.exists():
             return pd.read_csv(data_path)
         return None
