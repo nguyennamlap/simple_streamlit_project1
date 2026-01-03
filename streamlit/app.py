@@ -19,9 +19,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))   # streamlit/
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))  # repo root
-DATA_DIR = os.path.join(ROOT_DIR, "data")
+BASE_DIR = Path(__file__).resolve().parent   # streamlit/
+ROOT_DIR = BASE_DIR.parent                  # repo root
+DATA_DIR = ROOT_DIR / "data"
 # Custom CSS
 st.markdown("""
 <style>
@@ -86,7 +86,14 @@ st.markdown("""
 def load_model_artifacts():
     """Load all model artifacts"""
     try:
-        model_dir = DATA_DIR / "models"
+        model_dir = Path(DATA_DIR) / "models"
+        
+        # Debug: In ra thông tin thư mục
+        print(f"Model directory: {model_dir}")
+        print(f"Directory exists: {model_dir.exists()}")
+        
+        if not model_dir.exists():
+            return None, None, None, None, f"Model directory not found: {model_dir}"
         
         # Get latest files
         model_files = sorted(model_dir.glob('logistic_regression_*.pkl'))
@@ -94,40 +101,58 @@ def load_model_artifacts():
         encoder_files = sorted(model_dir.glob('label_encoders_*.pkl'))
         feature_files = sorted(model_dir.glob('feature_names_*.pkl'))
         
-        if not all([model_files, scaler_files, feature_files]):
-            return None, None, None, None, "Model files not found"
+        # Debug: In ra danh sách file tìm thấy
+        print(f"Model files found: {model_files}")
+        print(f"Scaler files found: {scaler_files}")
+        print(f"Encoder files found: {encoder_files}")
+        print(f"Feature files found: {feature_files}")
         
-        # Load latest artifacts
-        model = joblib.load(model_files[-1])
+        if not model_files:
+            return None, None, None, None, "No model files found (*.pkl)"
+        if not scaler_files:
+            return None, None, None, None, "No scaler files found"
+        if not feature_files:
+            return None, None, None, None, "No feature names files found"
+        
+        # Kiểm tra file model có thể đọc được
+        try:
+            model = joblib.load(model_files[-1])
+            print(f"Model loaded successfully: {type(model)}")
+        except Exception as e:
+            return None, None, None, None, f"Failed to load model file: {str(e)}"
+        
         scaler = joblib.load(scaler_files[-1])
         feature_names = joblib.load(feature_files[-1])
         label_encoders = joblib.load(encoder_files[-1]) if encoder_files else {}
         
         return model, scaler, feature_names, label_encoders, None
     except Exception as e:
-        return None, None, None, None, str(e)
+        return None, None, None, None, f"Error loading model: {str(e)}"
+    
 
-@st.cache_data
+@st.cache_data  
 def load_training_results():
     """Load training results"""
     try:
         report_dir = DATA_DIR / 'reports'
         result_files = sorted(report_dir.glob('training_results_*.json'))
-        
+
         if not result_files:
             return None
-        
+
         with open(result_files[-1], 'r') as f:
             return json.load(f)
+
     except Exception as e:
         st.error(f"Error loading training results: {e}")
         return None
+
 
 @st.cache_data
 def load_raw_data():
     """Load raw data (before cleaning)"""
     try:
-        data_path = Path(os.path.join(DATA_DIR, "application_train.csv"))
+        data_path = DATA_DIR / "application_train.csv"
         if data_path.exists():
             return pd.read_csv(data_path)
         return None
@@ -139,7 +164,7 @@ def load_raw_data():
 def load_processed_data():
     """Load processed data (after cleaning, before training)"""
     try:
-        data_path = Path(os.path.join(DATA_DIR, "df_processed.csv"))
+        data_path = DATA_DIR / "df_processed.csv"
         if data_path.exists():
             return pd.read_csv(data_path)
         return None
@@ -151,7 +176,7 @@ def load_processed_data():
 def load_training_data():
     """Load final training data (after feature engineering)"""
     try:
-        data_path = Path(os.path.join(DATA_DIR, 'df_final.csv'))
+        data_path = DATA_DIR / "df_final.csv"
         if data_path.exists():
             return pd.read_csv(data_path)
         return None
@@ -306,7 +331,6 @@ with st.sidebar:
             "🧹 After Cleaning", 
             "🎯 Before Training",
             "📈 Model Performance",
-            "🔮 Make Prediction",
             "ℹ️ About"
         ]
     )
@@ -1109,113 +1133,7 @@ elif page == "📈 Model Performance":
             with col2:
                 st.metric("Model Type", "Logistic Regression")
 
-elif page == "🔮 Make Prediction":
-    st.title("🔮 Credit Risk Prediction")
-    st.markdown("### Enter applicant details to assess credit risk")
-    
-    # Load model
-    model, scaler, feature_names, label_encoders, error = load_model_artifacts()
-    
-    if error:
-        st.error(f"Error loading model: {error}")
-        st.info("Please train the model first by running: `cd training && python train.py`")
-    else:
-        # Create input form
-        st.markdown("### 📝 Applicant Information")
-        
-        # Use columns for better layout
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            amt_income = st.number_input("Annual Income ($)", min_value=0, value=50000, step=1000)
-            amt_credit = st.number_input("Credit Amount ($)", min_value=0, value=200000, step=5000)
-            amt_goods = st.number_input("Goods Price ($)", min_value=0, value=180000, step=5000)
-            ext_source_1 = st.slider("External Source 1 Score", 0.0, 1.0, 0.5, 0.01)
-            ext_source_2 = st.slider("External Source 2 Score", 0.0, 1.0, 0.5, 0.01)
-        
-        with col2:
-            ext_source_3 = st.slider("External Source 3 Score", 0.0, 1.0, 0.5, 0.01)
-            ext_1_missing = st.checkbox("External Source 1 Missing", value=False)
-            ext_2_missing = st.checkbox("External Source 2 Missing", value=False)
-            ext_3_missing = st.checkbox("External Source 3 Missing", value=False)
-            is_retired = st.checkbox("Retired with No Occupation", value=False)
-            is_working = st.checkbox("Working with No Occupation", value=False)
-        
-        # Calculate derived feature
-        loan_ratio = amt_credit / amt_goods if amt_goods > 0 else 0
-        st.info(f"📊 Calculated Loan-to-Value Ratio: {loan_ratio:.2%}")
-        
-        # Prediction button
-        if st.button("🎯 Predict Credit Risk", type="primary"):
-            # Prepare input data
-            input_data = pd.DataFrame({
-                'AMT_INCOME_TOTAL': [amt_income],
-                'AMT_CREDIT': [amt_credit],
-                'AMT_GOODS_PRICE': [amt_goods],
-                'Tỉ lệ vay so với nhu cầu': [loan_ratio],
-                'EXT_SOURCE_1': [ext_source_1],
-                'EXT_SOURCE_2': [ext_source_2],
-                'EXT_SOURCE_3': [ext_source_3],
-                'EXT_SOURCE_1_is_missing': [int(ext_1_missing)],
-                'EXT_SOURCE_2_is_missing': [int(ext_2_missing)],
-                'EXT_SOURCE_3_is_missing': [int(ext_3_missing)],
-                'IS_RETIRED_NO_OCCUPATION': [int(is_retired)],
-                'IS_WORKING_NO_OCCUPATION': [int(is_working)]
-            })
-            
-            # Align with training features
-            for feat in feature_names:
-                if feat not in input_data.columns:
-                    input_data[feat] = 0
-            
-            input_data = input_data[feature_names]
-            
-            try:
-                # Scale features
-                input_scaled = scaler.transform(input_data)
-                
-                # Make prediction
-                prediction = model.predict(input_scaled)[0]
-                probability = model.predict_proba(input_scaled)[0]
-                
-                # Display results
-                st.markdown("---")
-                st.markdown("### 🎯 Prediction Results")
-                
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    if prediction == 1:
-                        st.markdown('<div class="prediction-box rejected"><h3>⚠️ HIGH RISK</h3><p>Default Predicted</p></div>', 
-                                   unsafe_allow_html=True)
-                    else:
-                        st.markdown('<div class="prediction-box approved"><h3>✅ LOW RISK</h3><p>No Default Predicted</p></div>', 
-                                   unsafe_allow_html=True)
-                
-                with col2:
-                    st.metric("Default Probability", f"{probability[1]*100:.2f}%")
-                    st.progress(probability[1])
-                
-                with col3:
-                    st.metric("No Default Probability", f"{probability[0]*100:.2f}%")
-                    st.progress(probability[0])
-                
-                # Risk gauge
-                fig = create_gauge_chart(probability[1], "Risk Score", max_value=1)
-                st.plotly_chart(fig, use_container_width=True, key='prediction_gauge')
-                
-                # Recommendation
-                st.markdown("### 💡 Recommendation")
-                if probability[1] > 0.7:
-                    st.error("🚫 **REJECT**: High risk of default. Consider requesting additional collateral or co-signer.")
-                elif probability[1] > 0.5:
-                    st.warning("⚠️ **REVIEW**: Moderate risk. Manual review recommended. Consider stricter terms.")
-                else:
-                    st.success("✅ **APPROVE**: Low risk of default. Standard terms applicable.")
-                
-            except Exception as e:
-                st.error(f"Prediction error: {e}")
-                st.info("Please ensure all model files are properly loaded.")
+
 
 elif page == "ℹ️ About":
     st.title("ℹ️ About This Dashboard")
@@ -1267,7 +1185,6 @@ elif page == "ℹ️ About":
     3. **After Cleaning**: See data quality improvements
     4. **Before Training**: Review final features
     5. **Model Performance**: Analyze model metrics
-    6. **Make Prediction**: Get real-time risk assessments
     
     ### 🚀 Deployment
     This dashboard can be deployed on:
