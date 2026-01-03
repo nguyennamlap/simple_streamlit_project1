@@ -86,7 +86,7 @@ st.markdown("""
 def load_model_artifacts():
     """Load all model artifacts"""
     try:
-        model_dir = Path(os.path.join(DATA_DIR, "/models"))
+        model_dir = DATA_DIR / "models"
         
         # Get latest files
         model_files = sorted(model_dir.glob('logistic_regression_*.pkl'))
@@ -111,7 +111,7 @@ def load_model_artifacts():
 def load_training_results():
     """Load training results"""
     try:
-        report_dir = Path(os.path.join(DATA_DIR, '/reports'))
+        report_dir = DATA_DIR / 'reports'
         result_files = sorted(report_dir.glob('training_results_*.json'))
         
         if not result_files:
