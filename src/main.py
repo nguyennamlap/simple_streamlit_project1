@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
-from src.handle.fill_null import fill_median, fill_mode, check_name_type_suite
+from handle.fill_null import fill_median, fill_mode, check_name_type_suite
 def main():
 
-    df = pd.read_csv('data/application_train.csv')
+    df = pd.read_csv('/app/data/application_train.csv')
     
     # Fill null values in 'AMT_INCOME_TOTAL' with median
     df = fill_median(df, 'AMT_INCOME_TOTAL')
@@ -75,6 +75,6 @@ def main():
     
     print(f"Processing complete. Shape: {df.shape}")
     print(f"Columns: {len(df.columns)}")
-    df.to_csv('data/df_processed.csv', index=False)
+    df.to_csv('/app/data/df_processed.csv', index=False)
 if __name__ == "__main__":
     main()
